@@ -58,18 +58,51 @@ update msg model =
                 { model
                     | tablero = actualizarTablero
                     , turno = siguienteMarca model.turno
+                    , ganador = comprobarGanador model.turno actualizarTablero
                 }
         Reset ->
             initialModel
 
 
+comprobarGanador : Mark -> Tablero -> Maybe Mark
+comprobarGanador mark tablero =
+    let
+        esMarcado row col =
+            case Dict.get ( row, col ) tablero of
+                Just mark_ ->
+                    mark_ == mark
 
+                Nothing ->
+                    False
+
+        finales =
+            [ List.all identity [ esMarcado 0 0, esMarcado 0 1, esMarcado 0 2 ]
+            , List.all identity [ esMarcado 1 0, esMarcado 1 1, esMarcado 1 2 ]
+            , List.all identity [ esMarcado 2 0, esMarcado 2 1, esMarcado 2 2 ]
+            , List.all identity [ esMarcado 0 0, esMarcado 1 0, esMarcado 2 0 ]
+            , List.all identity [ esMarcado 0 1, esMarcado 1 1, esMarcado 2 1 ]
+            , List.all identity [ esMarcado 0 2, esMarcado 1 2, esMarcado 2 2 ]
+            , List.all identity [ esMarcado 0 0, esMarcado 1 1, esMarcado 2 2 ]
+            , List.all identity [ esMarcado 2 0, esMarcado 1 1, esMarcado 0 2 ]
+            ]
+
+    in
+    if List.any identity finales then
+        Just mark
+
+
+    else
+        Nothing
 
 
 view : Model -> Html Msg
 view model =
     let
-
+        ganador = case model.ganador of
+            Just mark ->
+                E.row [] [ ponerMarca mark, E.text " ha ganado!"]
+            Nothing ->
+                E.none
         tablero =
             E.column [ E.spacing 5, E.centerX, E.centerY ]
                 [ cellRow model 0
@@ -86,7 +119,7 @@ view model =
     in
     E.layout [] <|
         E.column [ E.spacing 15, E.centerX, E.centerY ]
-            [ tablero, info ]
+            [ ganador, tablero, info ]
 
 
 cellRow : Model -> Int -> E.Element Msg
